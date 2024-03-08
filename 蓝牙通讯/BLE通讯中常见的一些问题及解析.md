@@ -12,4 +12,36 @@
 
 `` 4、最大连接数问题 ``
 
-&nbsp;&nbsp;&nbsp;&nbsp;标准答案是7个，为什么是7个，这个问题需要翻阅android官网蓝牙通讯的源代码。 
+ Android BLE 设备的最大连接数是7，这是由蓝牙规范和 Android 系统的蓝牙堆栈实现决定的。
+
+ >>> 1. 蓝牙规范
+
+ 蓝牙规范定义了两种类型的蓝牙设备：主设备和从设备。主设备可以连接多个从设备，但从设备只能连接一个主设备。
+
+在 BLE 中，主设备和从设备之间的连接称为“逻辑链路”。每个逻辑链路都需要一个物理通道。蓝牙规范规定，每个主设备最多可以有7个物理通道。
+
+>>> 2. Android 系统的蓝牙堆栈实现
+
+Android 系统的蓝牙堆栈在内核空间和用户空间都有实现。内核空间的实现负责管理蓝牙硬件和底层协议，用户空间的实现负责提供应用程序接口。
+
+在 Android 系统的蓝牙堆栈中，每个逻辑链路都由一个 BluetoothGatt 对象表示。BluetoothGatt 对象有一个 connect() 方法，用于建立连接。
+
+```
+public void connect(BluetoothDevice device, boolean autoConnect,
+                   BluetoothGattCallback callback) {
+    if (mBluetoothGatt != null) {
+        mBluetoothGatt.close();
+        mBluetoothGatt = null;
+    }
+    try {
+        mBluetoothGatt = device.connectGatt(context, autoConnect, callback);
+    } catch (IllegalArgumentException e) {
+        Log.e(TAG, "Failed to connect to GATT", e);
+        if (callback != null) {
+            callback.onConnectionStateChange(device, STATE_DISCONNECTED,
+                    STATUS_CONNECT_ERROR);
+        }
+    }
+}
+```
+
